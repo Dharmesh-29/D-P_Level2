@@ -1,0 +1,46 @@
+module ripple_carry_adder_4bit(
+    input  [3:0] A, B,
+    input  Cin,
+    output [3:0] Sum,
+    output Cout
+);
+    wire [3:0] C;  // internal carry wires
+
+    assign C[0] = Cin;
+
+    genvar i;
+    generate
+        for (i = 0; i < 4; i = i + 1) begin : FA_GEN
+            full_adder FA(
+                .A(A[i]),
+                .B(B[i]),
+                .Cin(C[i]),
+                .Sum(Sum[i]),
+                .Cout(C[i+1])
+            );
+        end
+    endgenerate
+
+    assign Cout = C[4]; // final carry-out
+endmodule
+
+
+Test Bench
+
+`timescale 1ns/1ps
+module tb_ripple_carry_adder_4bit;
+    reg [3:0] A, B;
+    reg Cin;
+    wire [3:0] Sum;
+    wire Cout;
+
+    ripple_carry_adder_4bit RCA(.A(A), .B(B), .Cin(Cin), .Sum(Sum), .Cout(Cout));
+
+    initial begin
+        A = 4'b0000; B = 4'b0000; Cin = 0; #10;
+        A = 4'b1010; B = 4'b0101; Cin = 0; #10;
+        A = 4'b1111; B = 4'b0001; Cin = 1; #10;
+        A = 4'b0110; B = 4'b1001; Cin = 0; #10;
+        $finish;
+    end
+endmodule
