@@ -1,3 +1,14 @@
+module full_adder(
+    input  A, B, Cin,
+    output Sum, Cout
+);
+    // Sum = A xor B xor Cin
+    assign #3 Sum = A ^ B ^ Cin;   // #3 simulates rise delay
+    // Cout = majority logic of A, B, Cin
+    assign #6 Cout = (A & B) | (B & Cin) | (A & Cin); // #6 simulates fall delay
+endmodule
+
+
 module ripple_carry_adder_4bit(
     input  [3:0] A, B,
     input  Cin,
