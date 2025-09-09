@@ -1,0 +1,69 @@
+Verilog-8bit Signed arithmentic operation
+module arithmetic_unit (
+    input  signed [7:0] A, B,
+    input  [1:0] sel,
+    output reg signed [7:0] result,
+    output reg overflow,
+    output reg zero,
+    output reg negative
+);
+
+    always @(*) begin
+        overflow = 0;
+        case(sel)
+            2'b00: begin // Addition
+                result = A + B;
+                overflow = ((A[7] == B[7]) && (result[7] != A[7]));
+            end
+            2'b01: begin // Subtraction
+                result = A - B;
+                overflow = ((A[7] != B[7]) && (result[7] != A[7]));
+            end
+            2'b10: begin // Comparison
+                result = (A > B) ? 8'd1 : 8'd0;
+            end
+            2'b11: begin // Absolute Difference
+                result = (A >= B) ? (A - B) : (B - A);
+            end
+        endcase
+
+        // Status flags
+        zero     = (result == 0);
+        negative = result[7];
+    end
+
+endmodule
+
+
+Test Bench
+
+module tb_arithmetic_unit;
+    reg signed [7:0] A, B;
+    reg [1:0] sel;
+    wire signed [7:0] result;
+    wire overflow, zero, negative;
+
+    arithmetic_unit uut (
+        .A(A), .B(B), .sel(sel),
+        .result(result),
+        .overflow(overflow),
+        .zero(zero),
+        .negative(negative)
+    );
+
+    initial begin
+        $monitor("Time=%0t A=%d B=%d Sel=%b | Result=%d Ovf=%b Zero=%b Neg=%b",
+                  $time, A, B, sel, result, overflow, zero, negative);
+
+        // Test Addition
+        A = 8'd50; B = 8'd60; sel = 2'b00; #10;
+        // Test Subtraction
+        A = 8'd10; B = 8'd20; sel = 2'b01; #10;
+        // Test Comparison
+        A = 8'd30; B = 8'd25; sel = 2'b10; #10;
+        // Test Absolute Difference
+        A = -8'd15; B = 8'd5; sel = 2'b11; #10;
+
+        $finish;
+    end
+endmodule
