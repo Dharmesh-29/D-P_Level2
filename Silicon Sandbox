@@ -1,0 +1,117 @@
+# LUT
+module LUT4 (
+    input  [3:0] in,
+    input  [15:0] mem,
+    output reg out
+);
+
+always @(*) begin
+    out = mem[in];
+end
+endmodule
+
+# D Flip Flop
+module DFF (
+    input clk,
+    input D,
+    output reg Q
+);
+    always @(posedge clk) begin
+        Q <= D;
+    end
+endmodule
+
+# CLB
+module CLB (
+    input clk,
+    input [3:0] in,
+    input [15:0] lut_mem,
+    output out
+);
+    wire lut_out;
+
+    LUT4 lut(.in(in), .mem(lut_mem), .out(lut_out));
+    DFF ff(.clk(clk), .D(lut_out), .Q(out));
+endmodule
+
+#Switch Matrix
+module SwitchMatrix4x4 (
+    input  [3:0] in0, in1, in2, in3,
+    input  [1:0] sel0, sel1, sel2, sel3,
+    output [3:0] out0, out1, out2, out3
+);
+
+    assign out0 = (sel0==0)? in0 :
+                  (sel0==1)? in1 :
+                  (sel0==2)? in2 : in3;
+
+    assign out1 = (sel1==0)? in0 :
+                  (sel1==1)? in1 :
+                  (sel1==2)? in2 : in3;
+
+    assign out2 = (sel2==0)? in0 :
+                  (sel2==1)? in1 :
+                  (sel2==2)? in2 : in3;
+
+    assign out3 = (sel3==0)? in0 :
+                  (sel3==1)? in1 :
+                  (sel3==2)? in2 : in3;
+endmodule
+
+#FPGA Tile
+module FPGA_Tile (
+    input clk,
+    input [3:0] external_inputs,
+    input [15:0] lut_mem,
+    input [1:0] sel0, sel1, sel2, sel3,
+    output tile_out
+);
+
+    wire [3:0] routed_inputs;
+
+    SwitchMatrix4x4 sm (
+        .in0(external_inputs),
+        .in1(external_inputs),
+        .in2(external_inputs),
+        .in3(external_inputs),
+        .sel0(sel0), .sel1(sel1), .sel2(sel2), .sel3(sel3),
+        .out0(routed_inputs), .out1(), .out2(), .out3()
+    );
+
+    CLB clb (
+        .clk(clk),
+        .in(routed_inputs),
+        .lut_mem(lut_mem),
+        .out(tile_out)
+    );
+endmodule
+
+# Test Bench
+
+module tb_fpga_tile;
+    reg clk;
+    reg [3:0] inputs;
+    reg [15:0] lut_mem;
+    reg [1:0] s0,s1,s2,s3;
+    wire out;
+
+    FPGA_Tile dut(clk, inputs, lut_mem, s0,s1,s2,s3, out);
+
+    always #5 clk = ~clk;
+
+    initial begin
+        clk = 0;
+        inputs = 4'b0011;
+
+        // LUT = AND gate
+        lut_mem = 16'b0000000000001000;
+
+        s0=0; s1=1; s2=2; s3=3;
+
+        #20 inputs = 4'b1111;
+        #20 inputs = 4'b0001;
+        #40 $stop;
+    end
+endmodule
+
+
